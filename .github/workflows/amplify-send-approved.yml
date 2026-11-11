@@ -1,0 +1,60 @@
+name: Amplify - Send Approved Email
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval_id:
+        description: 'ID of a previously approved outreach record in SurrealDB'
+        required: true
+        type: string
+      dry_run:
+        description: 'Preview only; do not deliver an email'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: amplify-approved-email-send
+  cancel-in-progress: false
+
+jobs:
+  send-approved:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: outreach-production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Ensure send-only runner is implemented
+        run: |
+          test -f scripts/send_approved_outreach.py || {
+            echo 'Send-only runner is not implemented. No email was sent.'
+            exit 1
+          }
+
+      - name: Execute approved send or dry run
+        env:
+          APPROVAL_ID: ${{ inputs.approval_id }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          SURREAL_ENABLED: 'true'
+          SURREAL_DATABASE: main
+          SURREAL_URL: ${{ secrets.SURREAL_URL }}
+          SURREAL_NAMESPACE: ${{ secrets.SURREAL_NAMESPACE }}
+          SURREAL_USERNAME: ${{ secrets.SURREAL_USERNAME }}
+          SURREAL_PASSWORD: ${{ secrets.SURREAL_PASSWORD }}
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+        run: python -m scripts.send_approved_outreach
