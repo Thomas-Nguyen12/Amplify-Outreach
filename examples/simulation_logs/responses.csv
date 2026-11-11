@@ -1,0 +1,6 @@
+run_id,customer_id,response_type,response_text,simulated_at
+sim-10e4e31bd820,SIM-001,interested,SIMULATED RESPONSE: I would like to see a sample of the £7/month daily insights.,2026-11-10T23:32:42.169940+00:00
+sim-10e4e31bd820,SIM-002,question,SIMULATED RESPONSE: Can you show how daily insights could help my niche?,2026-11-10T23:32:42.170117+00:00
+sim-10e4e31bd820,SIM-003,interested,SIMULATED RESPONSE: I would like to see a sample of the £7/month daily insights.,2026-11-10T23:32:42.170234+00:00
+sim-10e4e31bd820,SIM-004,declined,"SIMULATED RESPONSE: Not interested, please do not contact us again.",2026-11-10T23:32:42.170427+00:00
+sim-10e4e31bd820,SIM-005,no_response,,2026-11-10T23:32:42.170546+00:00

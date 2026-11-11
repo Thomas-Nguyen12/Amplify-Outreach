@@ -1,0 +1,1 @@
+{"name":"social-trend-hellominds-bridge","private":true,"type":"module","engines":{"node":">=22"},"dependencies":{"@animocabrands/minds-client-lib":"latest"}}

@@ -1,0 +1,181 @@
+[
+  {
+    "customer_id": "SIM-001",
+    "business_name": "BrightCart Boutique",
+    "platform": "instagram",
+    "website": "https://brightcart.example",
+    "profile_url": "https://instagram.com/brightcart.synthetic",
+    "source_url": "https://brightcart.example/updates",
+    "source_date": "2026-11-09",
+    "description": "Independent small business online shop struggling with content ideas; needs daily social media insights and competitor monitoring for product posts.",
+    "signal": "Need help with social media content planning and daily competitor monitoring.",
+    "response_persona": "interested",
+    "fictional_profile": {
+      "team_size": 3,
+      "industry": "handmade accessories ecommerce",
+      "fictional_monthly_sales_gbp": 4200,
+      "audience": "UK shoppers aged 18-34",
+      "challenge": "new collection every fortnight, struggles to identify high-demand themes",
+      "channels": [
+        "Instagram",
+        "TikTok"
+      ],
+      "subscription_hypothesis": "daily product trend alerts to inform product descriptions and launch content"
+    }
+  },
+  {
+    "customer_id": "SIM-002",
+    "business_name": "LaunchPad Micro SaaS",
+    "platform": "linkedin",
+    "website": "https://launchpad.example",
+    "source_url": "https://launchpad.example/blog/launch",
+    "source_date": "2026-11-08",
+    "description": "Bootstrapped startup founder needs content ideas, competitor monitoring, and daily insights to support regular launch posts.",
+    "signal": "Looking for content ideas and need help with social media marketing challenges.",
+    "response_persona": "question",
+    "fictional_profile": {
+      "team_size": 2,
+      "industry": "bootstrapped SaaS productivity",
+      "fictional_mrr_gbp": 850,
+      "audience": "solo founders and small remote teams",
+      "challenge": "launch in four weeks, needs competitor message tracking",
+      "channels": [
+        "LinkedIn",
+        "X"
+      ],
+      "subscription_hypothesis": "daily updates to category messaging and competitor positioning"
+    }
+  },
+  {
+    "customer_id": "SIM-003",
+    "business_name": "NicheNora Creator",
+    "platform": "tiktok",
+    "website": "https://nichenora.example",
+    "source_url": "https://nichenora.example/posts/latest",
+    "source_date": "2026-11-10",
+    "description": "Independent micro influencer content creator looking for daily content ideas, audience insights and a content calendar.",
+    "signal": "Need help with content planning and daily posts.",
+    "response_persona": "interested",
+    "fictional_profile": {
+      "team_size": 1,
+      "industry": "creator education/lifestyle",
+      "fictional_followers": 8200,
+      "audience": "new creators learning video editing",
+      "challenge": "publishes four shorts weekly and struggles to pick topics",
+      "channels": [
+        "TikTok",
+        "YouTube"
+      ],
+      "subscription_hypothesis": "daily emerging content topics in an education niche"
+    }
+  },
+  {
+    "customer_id": "SIM-004",
+    "business_name": "Corner Cup Cafe",
+    "platform": "web",
+    "website": "https://cornercup.example",
+    "source_url": "https://cornercup.example/news",
+    "source_date": "2026-11-09",
+    "description": "Independent small business cafe needs help with social media, has low engagement and a weekly content calendar.",
+    "signal": "Looking for content ideas and daily insights to improve engagement.",
+    "response_persona": "declined",
+    "fictional_profile": {
+      "team_size": 5,
+      "industry": "neighbourhood café",
+      "fictional_monthly_sales_gbp": 12000,
+      "audience": "local commuters",
+      "challenge": "limited time for digital marketing, more interested in monthly reviews",
+      "channels": [
+        "Instagram"
+      ],
+      "subscription_hypothesis": "possible low daily relevance, likely weak subscription fit"
+    }
+  },
+  {
+    "customer_id": "SIM-005",
+    "business_name": "LaunchVista Startup",
+    "platform": "x",
+    "website": "https://launchvista.example",
+    "source_url": "https://launchvista.example/blog",
+    "source_date": "2026-11-10",
+    "description": "Early stage startup founder struggling with content, needs daily insights and competitor monitoring for content calendar.",
+    "signal": "Need content ideas and social media marketing insights for the new launch.",
+    "response_persona": "no_response",
+    "fictional_profile": {
+      "team_size": 3,
+      "industry": "indie consumer startup",
+      "fictional_mrr_gbp": 210,
+      "audience": "indie app makers",
+      "challenge": "testing positioning before public launch",
+      "channels": [
+        "X",
+        "Reddit"
+      ],
+      "subscription_hypothesis": "daily competitor and category monitoring might aid launch"
+    }
+  },
+  {
+    "customer_id": "SIM-006",
+    "business_name": "Independent Wood Workshop",
+    "platform": "youtube",
+    "website": "https://woodshop.example",
+    "source_url": "https://woodshop.example/about",
+    "description": "Independent wood shop with a workshop and online storefront.",
+    "signal": "We share photos of our workshop",
+    "response_persona": "no_response",
+    "fictional_profile": {
+      "team_size": 2,
+      "industry": "woodworking retail",
+      "fictional_monthly_sales_gbp": 3100,
+      "audience": "local hobbyists",
+      "challenge": "mostly relies on repeat customers, no explicit research needs",
+      "channels": [
+        "YouTube"
+      ],
+      "subscription_hypothesis": "daily monitoring unlikely to provide recurring value"
+    }
+  },
+  {
+    "customer_id": "SIM-007",
+    "business_name": "Unverified business",
+    "platform": "reddit",
+    "website": "https://digest.example",
+    "source_url": "https://digest.example/issue",
+    "description": "An editorial article about startup market research and daily competitor analysis.",
+    "signal": "A guide to trend analytics",
+    "response_persona": "interested",
+    "fictional_profile": {
+      "team_size": null,
+      "industry": "unverified editorial site",
+      "audience": "unknown",
+      "challenge": "not an established prospect",
+      "channels": [
+        "Reddit"
+      ],
+      "subscription_hypothesis": "exclude due to identity uncertainty"
+    }
+  },
+  {
+    "customer_id": "SIM-008",
+    "business_name": "Blocked Indie Store",
+    "platform": "instagram",
+    "website": "https://blocked.example",
+    "source_url": "https://blocked.example/news",
+    "source_date": "2026-11-09",
+    "description": "Independent small shop looking for daily trend analysis and competitor research.",
+    "signal": "Need insights for a new product launch",
+    "response_persona": "interested",
+    "suppressed": true,
+    "fictional_profile": {
+      "team_size": 4,
+      "industry": "independent homewares ecommerce",
+      "fictional_monthly_sales_gbp": 7600,
+      "audience": "home design enthusiasts",
+      "challenge": "launching seasonal candles",
+      "channels": [
+        "Instagram"
+      ],
+      "subscription_hypothesis": "do not research/contact because excluded by fixture suppression"
+    }
+  }
+]

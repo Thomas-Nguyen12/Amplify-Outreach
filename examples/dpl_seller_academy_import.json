@@ -1,0 +1,64 @@
+{
+  "identity": "https://www.youtube.com/channel/UCeChZk4udBaifSp0zDIFkDw",
+  "alias": "legacy_CF655841",
+  "report": {
+    "status": "completed",
+    "summary": "DPL Seller Academy is reported as the YouTube education arm of Digital Product Labs, Inc. (dpl.company), a US software vendor with a Beaverton, Oregon site footer. The video '5 Marketing Trends Small Businesses can Actually Use in 2026' was reportedly confirmed via YouTube oEmbed. Search-index claims about video age, duration and views were not verified directly. No observed content-idea difficulty or trend-tracking struggle was found; the company blog publishes timely articles, suggesting an existing in-house monitoring workflow. Recurring need is possible but unproven, and daily ready-to-post content may have limited value relative to its long-form publishing workflow.",
+    "segment": "small_business",
+    "content_challenges": [
+      "No observed difficulty producing content: site reportedly publishes multiple tutorial/comparison posts weekly alongside YouTube videos",
+      "Timely platform and marketplace news is relevant to its content operations, but this does not prove a problem",
+      "Current long-form education content does not establish a need for ready-to-post daily social content"
+    ],
+    "recurring_need": "possible",
+    "subscription_fit": "possible",
+    "confidence": "medium",
+    "evidence": [
+      {
+        "source_url": "https://www.youtube.com/watch?v=5FhWPjEmnQQ",
+        "quote": "5 Marketing Trends Small Businesses can Actually Use in 2026",
+        "observed_at": "2026-11-11"
+      },
+      {
+        "source_url": "https://www.youtube.com/channel/UCeChZk4udBaifSp0zDIFkDw",
+        "quote": "DPL Seller Academy - YouTube",
+        "observed_at": "2026-11-11"
+      },
+      {
+        "source_url": "https://dpl.company/blogs/",
+        "quote": "DPL seller academy - Guides, tools, docs, and videos - For marketplace sellers using DPL.",
+        "observed_at": "2026-11-11"
+      },
+      {
+        "source_url": "https://dpl.company/blogs/",
+        "quote": "© 2026 Digital Product Labs, Inc. All rights reserved. - 9450 Southwest Gemini Drive , Beaverton, OR 97008 , USA",
+        "observed_at": "2026-11-11"
+      },
+      {
+        "source_url": "https://dpl.company/blogs/",
+        "quote": "InkFrog Is Shutting Down. Here's What Shopify eBay Sellers Need to Do Before June 1",
+        "observed_at": "2026-11-11"
+      },
+      {
+        "source_url": "https://dpl.company/blogs/",
+        "quote": "LitCommerce vs CedCommerce vs DPL: Which Shopify Integration Is Better?",
+        "observed_at": "2026-11-11"
+      }
+    ],
+    "hypotheses": [
+      "Daily hot-topic alerts could be useful, but the reported InkFrog article indicates existing reactive monitoring",
+      "Ready-to-post suggestions might have limited incremental value to an established publishing workflow",
+      "Target-audience overlap does not establish willingness to buy",
+      "Current in-house content production may reduce perceived need"
+    ],
+    "limitations": [
+      "YouTube pages are JavaScript-rendered and the video data was not directly confirmed by the report",
+      "View count, age and duration are from search snapshots only",
+      "No independent cross-verification of the video and dplselleracademy.com was unreachable",
+      "Team size, revenue, monitoring tools and content gaps are unknown",
+      "Information was supplied by a Mind report and has not been independently verified by this application",
+      "Buyer intent, willingness to pay and decision-maker identity are unknown"
+    ],
+    "normalization_note": "Valid JSON reconstructed from pasted report; markdown-corrupted source_url fields were reduced to URLs. This is not independent verification."
+  }
+}

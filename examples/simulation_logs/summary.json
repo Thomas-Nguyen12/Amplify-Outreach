@@ -1,0 +1,19 @@
+{
+  "actual_revenue_gbp": 0,
+  "actual_subscriptions": 0,
+  "billing_interval": "month",
+  "currency": "GBP",
+  "customers": 8,
+  "excluded_or_unqualified": 3,
+  "insights_frequency": "daily",
+  "live_messages_sent": 0,
+  "qualified": 5,
+  "run_id": "sim-10e4e31bd820",
+  "simulated_declines": 1,
+  "simulated_interested": 2,
+  "simulated_messages_sent": 5,
+  "simulated_no_response": 1,
+  "simulated_questions": 1,
+  "simulation": true,
+  "subscription_price_gbp": "7"
+}

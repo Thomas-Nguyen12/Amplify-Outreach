@@ -1,0 +1,12 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+httpx>=0.27,<1
+pydantic>=2.8,<3
+pydantic-settings>=2.4,<3
+python-dotenv>=1,<2
+tavily-python>=0.5,<1
+pytest>=8,<9
+surrealdb>=2,<3
+google-api-python-client>=2.0,<3
+google-auth-httplib2>=0.2,<1
+google-auth-oauthlib>=1.2,<2
