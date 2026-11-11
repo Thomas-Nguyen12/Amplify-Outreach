@@ -4,61 +4,127 @@ name: Amplify Hourly Agent
 on:
   workflow_dispatch:
   schedule:
+    # Run hourly at 17 minutes past the hour (UTC)
     - cron: "17 * * * *"
 
 permissions:
   contents: read
 
 concurrency:
-  group: amplify-production
+  group: amplify-research-production
   cancel-in-progress: false
 
 jobs:
   amplify:
+    name: Discover and Research Prospects
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+      # Research and discovery configuration
+      DISCOVERY_MODE: "live_search"
+      YOUTUBE_ENABLED: "true"
+      TREG_ENABLED: "true"
+      MINDS_ENABLED: "true"
+      MINDS_MAX_RESEARCH_PER_RUN: "2"
+      MINDS_TIMEOUT_SECONDS: "180"
+
+      # Research only: never send customer emails
+      OUTREACH_AUTOSEND_ENABLED: "false"
+      GMAIL_REPLY_POLL_ENABLED: "false"
+
+      # SurrealDB Cloud
+      SURREAL_ENABLED: "true"
+      SURREAL_URL: ${{ secrets.SURREAL_URL }}
+      SURREAL_USERNAME: ${{ secrets.SURREAL_USERNAME }}
+      SURREAL_PASSWORD: ${{ secrets.SURREAL_PASSWORD }}
+      SURREAL_NAMESPACE: ${{ secrets.SURREAL_NAMESPACE }}
+      SURREAL_DATABASE: ${{ secrets.SURREAL_DATABASE || 'main' }}
+
+      # YouTube
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      YOUTUBE_SEARCH_TYPE: ${{ secrets.YOUTUBE_SEARCH_TYPE || 'video' }}
+      YOUTUBE_MAX_SEARCHES_PER_RUN: "1"
+      YOUTUBE_ENRICH_VIDEO: ${{ secrets.YOUTUBE_ENRICH_VIDEO || 'false' }}
+
+      # Treg / Instagram
+      TREG_TOKEN: ${{ secrets.TREG_TOKEN }}
+      TREG_BASE_URL: ${{ secrets.TREG_BASE_URL || 'https://treg.to' }}
+      TREG_AUTH_HEADER: ${{ secrets.TREG_AUTH_HEADER || 'X-Treg-Token' }}
+      TREG_INSTAGRAM_ENDPOINT: ${{ secrets.TREG_INSTAGRAM_ENDPOINT }}
+
+      # HelloMinds AI
+      MINDS_BUILDER_API_KEY: ${{ secrets.MINDS_BUILDER_API_KEY }}
+      MINDS_RESEARCH_MIND_ID: ${{ secrets.MINDS_RESEARCH_MIND_ID }}
+
+      # Optional integrations
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      TAVILY_ENABLED: ${{ secrets.TAVILY_ENABLED || 'false' }}
+      ELFA_API_KEY: ${{ secrets.ELFA_API_KEY }}
+
+      # Amplify website
+      TEASER_URL: "https://amplify-social.replit.app/"
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Python
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
-      - name: Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Install dependencies
+      - name: Install Python and Node dependencies
+        shell: bash
         run: |
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
           cd bridge
           npm ci
 
+      - name: Verify safe research configuration
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+
+          limit = int(os.environ["MINDS_MAX_RESEARCH_PER_RUN"])
+
+          assert 1 <= limit <= 2, "Research limit must be 1 or 2"
+          assert os.environ["OUTREACH_AUTOSEND_ENABLED"] == "false"
+          assert os.environ["GMAIL_REPLY_POLL_ENABLED"] == "false"
+
+          required = [
+              "SURREAL_URL",
+              "SURREAL_USERNAME",
+              "SURREAL_PASSWORD",
+              "SURREAL_NAMESPACE",
+              "YOUTUBE_API_KEY",
+              "TREG_TOKEN",
+              "TREG_INSTAGRAM_ENDPOINT",
+              "MINDS_BUILDER_API_KEY",
+              "MINDS_RESEARCH_MIND_ID",
+          ]
+
+          missing = [name for name in required if not os.getenv(name)]
+
+          if missing:
+              raise SystemExit(
+                  "Missing required GitHub Secrets: "
+                  + ", ".join(missing)
+              )
+
+          print("Research configuration checks passed.")
+          PY
+
       - name: Run discovery and research
-        env:
-          SURREAL_ENABLED: "true"
-          SURREAL_DATABASE: main
-          DISCOVERY_MODE: live_search
-          YOUTUBE_ENABLED: "true"
-          TREG_ENABLED: "true"
-          MINDS_ENABLED: "true"
-          OUTREACH_AUTOSEND_ENABLED: "false"
-          GMAIL_REPLY_POLL_ENABLED: "false"
-
-          SURREAL_URL: ${{ secrets.SURREAL_URL }}
-          SURREAL_USERNAME: ${{ secrets.SURREAL_USERNAME }}
-          SURREAL_PASSWORD: ${{ secrets.SURREAL_PASSWORD }}
-          SURREAL_NAMESPACE: ${{ secrets.SURREAL_NAMESPACE }}
-
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          TREG_TOKEN: ${{ secrets.TREG_TOKEN }}
-          TREG_INSTAGRAM_ENDPOINT: ${{ vars.TREG_INSTAGRAM_ENDPOINT }}
-
-          MINDS_BUILDER_API_KEY: ${{ secrets.MINDS_BUILDER_API_KEY }}
-          MINDS_RESEARCH_MIND_ID: ${{ secrets.MINDS_RESEARCH_MIND_ID }}
-
-        run: python -m scripts.production_discovery_once
+        shell: bash
+        run: |
+          python -m scripts.production_discovery_once
