@@ -12,6 +12,26 @@ class FakePersistentStore(BaseStore):
         return [dict(data, prospect_identity=identity)
                 for (name, identity), data in self.tables.items() if name == table][:limit]
 
+    def claim_research(self, identity, alias):
+        """Simulate atomic research reservation in tests."""
+        key = ("research_briefs", identity)
+
+        if key in self.tables:
+            return False
+
+        self.tables[key] = {
+            "prospect_identity": identity,
+            "alias": alias,
+            "status": "reserved",
+            "reply": "",
+        }
+
+        return True
+
+
+
+
+
 
 
 def prospect():

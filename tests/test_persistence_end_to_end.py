@@ -50,6 +50,29 @@ class FakePersistentStore:
     def save_draft(self, identity, subject, message):
         self.put('outreach_drafts',identity,{'subject':subject,'message':message,'sent':False})
 
+    def claim_research(self, identity, alias):
+        """Simulate an atomic research reservation."""
+
+        key = ("research_briefs", identity)
+
+        if key in self.tables:
+            return False
+
+        self.tables[key] = {
+            "prospect_identity": identity,
+            "alias": alias,
+            "status": "reserved",
+            "reply": "",
+        }
+
+        return True
+
+
+
+
+
+
+
 @pytest.fixture
 def setup(tmp_path, monkeypatch):
     store = FakePersistentStore()
@@ -134,23 +157,55 @@ def test_canonical_id_stable_across_url_variants():
     assert canonical_identity('https://example.org/a') != canonical_identity('https://example.org/b')
 
 
-def test_failed_research_retries_without_duplicate_draft(setup):
-    store,calls,profiles,tmp_path,monkeypatch=setup
+def test_failed_research_preserves_reservation_without_resending(
+    setup,
+):
+    store, calls, profiles, tmp_path, monkeypatch = setup
+
     async def failing(lead):
-        raise RuntimeError('temporary research outage')
-    monkeypatch.setattr(pipeline,'research_lead',failing)
-    first=run()
-    assert first['saved']==1
-    assert first['drafts']==0  # Research must succeed before the first draft.
-    assert first['researched']==0
-    fresh_sandbox(tmp_path,monkeypatch,'restart-after-failure')
-    async def recovered(lead):
-        calls['research']+=1
-        return {'mind_id':'test','alias':'test','reply':json.dumps({'status':'completed','summary':'Recovered research','content_challenges':[],'limitations':[],'evidence':[{'source_url':profiles[0].profile_url,'quote':'looking for competitor analysis and daily market research'}]})}
-    monkeypatch.setattr(pipeline,'research_lead',recovered)
-    second=run()
-    assert second['saved']==0
-    assert second['drafts']==1  # First draft after recovered research; no duplicates.
-    assert second['researched']==1
-    assert calls['research']==1
-    assert json.loads(store.get_research(lead_identity(profiles[0]))['reply'])['summary']=='Recovered research'
+        calls["research"] += 1
+        raise RuntimeError("temporary research outage")
+
+    monkeypatch.setattr(pipeline, "research_lead", failing)
+
+    first = run()
+
+    assert first["saved"] == 1
+    assert first["drafts"] == 0
+    assert first["researched"] == 0
+    assert calls["research"] == 1
+
+    identity = lead_identity(profiles[0])
+
+    reservation = store.get_research(identity)
+
+    assert reservation is not None
+    assert reservation["status"] == "reserved"
+    assert reservation["alias"].startswith("research_")
+
+    fresh_sandbox(
+        tmp_path,
+        monkeypatch,
+        "restart-after-failure",
+    )
+
+    async def must_not_restart(lead):
+        raise AssertionError(
+            "A reserved HelloMinds job must not be started twice"
+        )
+
+    monkeypatch.setattr(
+        pipeline,
+        "research_lead",
+        must_not_restart,
+    )
+
+    second = run()
+
+    assert second["saved"] == 0
+    assert second["researched"] == 0
+    assert second["drafts"] == 0
+    assert calls["research"] == 1
+
+    # The original reservation survives the restart.
+    assert store.get_research(identity)["alias"] == reservation["alias"]

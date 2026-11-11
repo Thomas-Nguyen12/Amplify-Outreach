@@ -15,17 +15,50 @@ def _canon_url(url):
     return urlunsplit((p.scheme.lower(), p.netloc.lower().removeprefix('www.'), p.path.rstrip('/'), '', ''))
 
 
+
 def parse_assessment(reply):
+    """Parse structured HelloMinds reports from JSON or supported wrappers."""
     if not isinstance(reply, str):
         return None
+
     text = reply.strip()
-    if text.startswith('```'):
-        text = re.sub(r'^```(?:json)?\s*', '', text, count=1, flags=re.I)
-        text = re.sub(r'\s*```$', '', text, count=1)
+
+    # HelloMinds sometimes wraps JSON inside HTML <pre> tags.
+    text = re.sub(
+        r'^<pre(?:\s[^>]*)?>\s*',
+        '',
+        text,
+        count=1,
+        flags=re.I,
+    )
+    text = re.sub(
+        r'\s*</pre>\s*$',
+        '',
+        text,
+        count=1,
+        flags=re.I,
+    )
+
+    # Support Markdown code fences, including inside <pre> tags.
+    text = re.sub(
+        r'^```(?:json)?\s*',
+        '',
+        text,
+        count=1,
+        flags=re.I,
+    )
+    text = re.sub(
+        r'\s*```\s*$',
+        '',
+        text,
+        count=1,
+    )
+
     try:
-        obj = json.loads(text)
+        obj = json.loads(text.strip())
     except (ValueError, TypeError):
         return None
+
     return obj if isinstance(obj, dict) else None
 
 
