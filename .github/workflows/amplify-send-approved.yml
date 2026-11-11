@@ -11,14 +11,13 @@ on:
         default: true
 
   schedule:
-    # Monday-Friday at 09:17 and 14:17 London time
+    # Monday-Friday, 09:17 and 14:17 London time
     - cron: "17 9,14 * * 1-5"
       timezone: "Europe/London"
 
 permissions:
   contents: read
 
-# Prevent overlapping runs of this workflow.
 concurrency:
   group: amplify-approved-customer-email
   cancel-in-progress: false
@@ -28,14 +27,13 @@ jobs:
     name: Send Approved Customer Emails
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     environment: outreach-production
 
     env:
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
 
-      # Outreach settings - GitHub Secrets
+      # Outreach configuration
       OUTREACH_AUTOSEND_ENABLED: ${{ secrets.OUTREACH_AUTOSEND_ENABLED || 'false' }}
       HACKATHON_OUTREACH_PERMISSION_GRANTED: ${{ secrets.HACKATHON_OUTREACH_PERMISSION_GRANTED || 'false' }}
       HACKATHON_PERMISSION_REFERENCE: ${{ secrets.HACKATHON_PERMISSION_REFERENCE }}
@@ -47,7 +45,7 @@ jobs:
       OUTREACH_SENDER_NAME: ${{ secrets.OUTREACH_SENDER_NAME }}
       OUTREACH_MAX_PER_DAY: ${{ secrets.OUTREACH_MAX_PER_DAY || '3' }}
 
-      # SurrealDB
+      # SurrealDB Cloud
       SURREAL_ENABLED: "true"
       SURREAL_URL: ${{ secrets.SURREAL_URL }}
       SURREAL_USERNAME: ${{ secrets.SURREAL_USERNAME }}
@@ -55,184 +53,170 @@ jobs:
       SURREAL_NAMESPACE: ${{ secrets.SURREAL_NAMESPACE }}
       SURREAL_DATABASE: ${{ secrets.SURREAL_DATABASE || 'main' }}
 
-      # Application and provider credentials
+      # Application credentials
       AGENT_API_KEY: ${{ secrets.AGENT_API_KEY }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
-      # Gmail OAuth credentials
-      GMAIL_OAUTH_CLIENT_FILE: /tmp/amplify-gmail/gmail_oauth.json
-      GMAIL_TOKEN_FILE: /tmp/amplify-gmail/gmail_token.json
-
-
+      # Gmail credentials stored as raw JSON secrets
+      GMAIL_OAUTH: ${{ secrets.GMAIL_OAUTH }}
+      GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
 
       # Official Amplify website
       AMPLIFY_SITE_URL: "https://amplify-social.replit.app/"
 
-      # Scheduled executions are live;
-      # manual executions default to dry-run.
+      # Scheduled runs are live; manual runs default to dry-run
       DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || (inputs.dry_run && 'true' || 'false') }}
 
     steps:
-      # --------------------------------------------------
-      # 1. Check whether outreach is enabled
-      # --------------------------------------------------
       - name: Check outreach configuration
         id: gate
         shell: bash
         run: |
           if [[ "$OUTREACH_AUTOSEND_ENABLED" != "true" ]]; then
-            echo "Automatic outreach is disabled."
-            echo "No messages will be sent."
+            echo "Outreach disabled. No emails will be sent."
             echo "run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [[ "$HACKATHON_OUTREACH_PERMISSION_GRANTED" != "true" ]]; then
-            echo "Outreach permission flag is disabled."
+            echo "Permission flag disabled."
             echo "run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [[ "$OUTREACH_EMAIL_CHANNEL_PERMITTED" != "true" ]]; then
-            echo "Email channel is not permitted."
+            echo "Email channel not permitted."
             echo "run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [[ -z "$HACKATHON_PERMISSION_REFERENCE" ]]; then
-            echo "Missing permission reference."
+            echo "Permission reference missing."
             echo "run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "Outreach configuration gate passed."
+          echo "Configuration gate passed."
           echo "run=true" >> "$GITHUB_OUTPUT"
 
-      # --------------------------------------------------
-      # 2. Download application
-      # --------------------------------------------------
-      - name: Check out Amplify repository
+      - name: Checkout repository
         if: steps.gate.outputs.run == 'true'
         uses: actions/checkout@v4
 
-      # --------------------------------------------------
-      # 3. Install Python
-      # --------------------------------------------------
-      - name: Set up Python 3.13
+      - name: Set up Python
         if: steps.gate.outputs.run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
-      # --------------------------------------------------
-      # 4. Install application dependencies
-      # --------------------------------------------------
-      - name: Install Python dependencies
+      - name: Install dependencies
         if: steps.gate.outputs.run == 'true'
-        shell: bash
         run: |
-          python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      # --------------------------------------------------
-      # 5. Check sender code exists
-      # --------------------------------------------------
-      - name: Verify messaging implementation
+      - name: Verify sender files
         if: steps.gate.outputs.run == 'true'
-        shell: bash
         run: |
           test -f scripts/send_approved_outreach.py
           test -f app/outreach.py
           test -f app/surreal_store.py
+          python -m py_compile scripts/send_approved_outreach.py
 
-          python -m py_compile \
-            scripts/send_approved_outreach.py
-
-          echo "Messaging code found."
-
-      # --------------------------------------------------
-      # 6. Restore Gmail OAuth credentials
-      # --------------------------------------------------
-      - name: Prepare Gmail OAuth files
+      - name: Create temporary Gmail credentials
         if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           if [[ "$OUTREACH_PROVIDER" == "gmail" ]]; then
             python - <<'PY'
-          import base64
+          import json
           import os
           from pathlib import Path
 
-          credentials = (
-              (
-                  "GMAIL_OAUTH_CLIENT_JSON_B64",
-                  "GMAIL_OAUTH_CLIENT_FILE",
-              ),
-              (
-                  "GMAIL_TOKEN_JSON_B64",
-                  "GMAIL_TOKEN_FILE",
-              ),
+          credentials_dir = Path(
+              os.environ["RUNNER_TEMP"]
+          ) / "amplify-gmail"
+
+          credentials_dir.mkdir(
+              parents=True,
+              exist_ok=True
           )
+          credentials_dir.chmod(0o700)
 
-          for secret_name, path_name in credentials:
-              encoded = os.environ.get(secret_name, "")
+          files = [
+              ("GMAIL_OAUTH", "gmail_oauth.json"),
+              ("GMAIL_TOKEN", "gmail_token.json"),
+          ]
 
-              if not encoded:
-                  raise SystemExit(
-                      f"Missing required GitHub Secret: {secret_name}"
+          github_env = Path(os.environ["GITHUB_ENV"])
+
+          with github_env.open("a") as env_file:
+              for secret_name, filename in files:
+                  content = os.environ.get(
+                      secret_name, ""
                   )
 
-              destination = Path(os.environ[path_name])
-              destination.parent.mkdir(
-                  parents=True,
-                  exist_ok=True,
-              )
+                  if not content.strip():
+                      raise SystemExit(
+                          f"Missing GitHub Secret: {secret_name}"
+                      )
 
-              destination.write_bytes(
-                  base64.b64decode(
-                      encoded,
-                      validate=True,
+                  try:
+                      parsed = json.loads(content)
+                  except json.JSONDecodeError:
+                      raise SystemExit(
+                          f"{secret_name} must contain valid JSON"
+                      )
+
+                  if not isinstance(parsed, dict):
+                      raise SystemExit(
+                          f"{secret_name} must contain a JSON object"
+                      )
+
+                  path = credentials_dir / filename
+                  path.write_text(content)
+                  path.chmod(0o600)
+
+                  env_var = (
+                      "GMAIL_OAUTH_CLIENT_FILE"
+                      if secret_name == "GMAIL_OAUTH"
+                      else "GMAIL_TOKEN_FILE"
                   )
-              )
 
-              destination.chmod(0o600)
+                  print(
+                      f"{env_var}={path}",
+                      file=env_file
+                  )
 
-          print("Gmail credentials prepared.")
+          print("Gmail credential files prepared.")
           PY
           else
-            echo "Gmail credential setup not required."
+            echo "Provider does not require Gmail credentials."
           fi
 
-      # --------------------------------------------------
-      # 7. Dispatch approved messages only
-      # --------------------------------------------------
-      - name: Send eligible and approved customer emails
+      - name: Send approved customer emails
         if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
-          echo "Starting approved outreach runner."
-
           if [[ "$DRY_RUN" == "true" ]]; then
-            echo "DRY RUN: No messages should be sent."
+            echo "DRY RUN requested."
           else
-            echo "LIVE MODE: Approved messages may be sent."
+            echo "LIVE MODE: approved emails may be sent."
           fi
 
-          python -m scripts.send_approved_outreach \
-            --limit 3
+          python -m scripts.send_approved_outreach --limit 3
 
-      # --------------------------------------------------
-      # 8. Report execution status
-      # --------------------------------------------------
-      - name: Report outcome
+      - name: Report execution status
         if: always()
         shell: bash
+        env:
+          GATE_RESULT: ${{ steps.gate.outputs.run }}
         run: |
-          if [[ "${{ steps.gate.outputs.run }}" != "true" ]]; then
-            echo "Amplify messaging was skipped."
+          if [[ "$GATE_RESULT" != "true" ]]; then
+            echo "Sending skipped by configuration gate."
           elif [[ "$DRY_RUN" == "true" ]]; then
-            echo "Amplify messaging dry run completed."
+            echo "Dry-run execution finished."
           else
-            echo "Amplify messaging execution finished."
-            echo "Check sender logs for actual delivery counts."
+            echo "Live sending execution finished."
           fi
+
+          echo "Check sender logs for actual delivery counts."
