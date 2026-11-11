@@ -1,60 +1,117 @@
-name: Amplify - Send Approved Email
+name: Amplify - Send Approved Customer Emails
 
 on:
   workflow_dispatch:
     inputs:
-      approval_id:
-        description: 'ID of a previously approved outreach record in SurrealDB'
-        required: true
-        type: string
       dry_run:
-        description: 'Preview only; do not deliver an email'
+        description: 'Preview eligible, approved emails without sending'
         required: true
-        default: true
         type: boolean
+        default: true
+  schedule:
+    # 09:17 and 14:17 London time, Monday-Friday, accounting for GMT/BST.
+    - cron: '17 9,14 * * 1-5'
+      timezone: Europe/London
 
 permissions:
   contents: read
 
+# Prevent overlapping executions of this workflow. Database claims protect
+# against sends started by other workers or previous attempts.
 concurrency:
-  group: amplify-approved-email-send
+  group: amplify-approved-customer-email
   cancel-in-progress: false
 
 jobs:
   send-approved:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment: outreach-production
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      OUTREACH_AUTOSEND_ENABLED: ${{ vars.OUTREACH_AUTOSEND_ENABLED || 'false' }}
+      HACKATHON_OUTREACH_PERMISSION_GRANTED: ${{ vars.HACKATHON_OUTREACH_PERMISSION_GRANTED || 'false' }}
+      HACKATHON_PERMISSION_REFERENCE: ${{ vars.HACKATHON_PERMISSION_REFERENCE }}
+      OUTREACH_EMAIL_CHANNEL_PERMITTED: ${{ vars.OUTREACH_EMAIL_CHANNEL_PERMITTED || 'false' }}
+      OUTREACH_PROVIDER: ${{ vars.OUTREACH_PROVIDER || 'gmail' }}
+      OUTREACH_FROM_EMAIL: ${{ vars.OUTREACH_FROM_EMAIL }}
+      OUTREACH_REPLY_TO: ${{ vars.OUTREACH_REPLY_TO }}
+      OUTREACH_SENDER_NAME: ${{ vars.OUTREACH_SENDER_NAME }}
+      OUTREACH_MAX_PER_DAY: ${{ vars.OUTREACH_MAX_PER_DAY || '3' }}
+      SURREAL_ENABLED: 'true'
+      SURREAL_URL: ${{ secrets.SURREAL_URL }}
+      SURREAL_USERNAME: ${{ secrets.SURREAL_USERNAME }}
+      SURREAL_PASSWORD: ${{ secrets.SURREAL_PASSWORD }}
+      SURREAL_NAMESPACE: ${{ secrets.SURREAL_NAMESPACE }}
+      SURREAL_DATABASE: ${{ vars.SURREAL_DATABASE || 'main' }}
+      AGENT_API_KEY: ${{ secrets.AGENT_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      GMAIL_OAUTH_CLIENT_JSON_B64: ${{ secrets.GMAIL_OAUTH_CLIENT_JSON_B64 }}
+      GMAIL_TOKEN_JSON_B64: ${{ secrets.GMAIL_TOKEN_JSON_B64 }}
+      GMAIL_OAUTH_CLIENT_FILE: ${{ runner.temp }}/amplify-gmail/client.json
+      GMAIL_TOKEN_FILE: ${{ runner.temp }}/amplify-gmail/token.json
+      AMPLIFY_SITE_URL: 'https://amplify-social.replit.app/'
+
     steps:
-      - name: Checkout repository
+      - name: Keep scheduled sending disabled unless explicitly enabled
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          if [[ "$EVENT_NAME" == "schedule" && "$OUTREACH_AUTOSEND_ENABLED" != "true" ]]; then
+            echo 'Scheduled sending is disabled; no emails sent.'
+            echo 'run=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out repository
+        if: steps.gate.outputs.run == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Python
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      - name: Install Python dependencies
+      - name: Install application dependencies
+        if: steps.gate.outputs.run == 'true'
         run: python -m pip install -r requirements.txt
 
-      - name: Ensure send-only runner is implemented
+      - name: Verify sending implementation exists
+        if: steps.gate.outputs.run == 'true'
         run: |
-          test -f scripts/send_approved_outreach.py || {
-            echo 'Send-only runner is not implemented. No email was sent.'
-            exit 1
-          }
+          test -f scripts/send_approved_outreach.py
+          test -f app/outreach.py
+          test -f app/surreal_store.py
 
-      - name: Execute approved send or dry run
+      - name: Set up Gmail OAuth files if using Gmail
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          if [[ "$OUTREACH_PROVIDER" == 'gmail' ]]; then
+            python - <<'PY'
+          import base64, os, pathlib
+          for source, destination in (
+              ('GMAIL_OAUTH_CLIENT_JSON_B64','GMAIL_OAUTH_CLIENT_FILE'),
+              ('GMAIL_TOKEN_JSON_B64','GMAIL_TOKEN_FILE'),
+          ):
+              value = os.environ.get(source, '')
+              if not value:
+                  raise SystemExit(f'Missing required secret {source}')
+              path = pathlib.Path(os.environ[destination])
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_bytes(base64.b64decode(value, validate=True))
+              path.chmod(0o600)
+          PY
+          fi
+
+      - name: Dispatch only pre-approved, eligible email drafts
+        if: steps.gate.outputs.run == 'true'
         env:
-          APPROVAL_ID: ${{ inputs.approval_id }}
-          DRY_RUN: ${{ inputs.dry_run }}
-          SURREAL_ENABLED: 'true'
-          SURREAL_DATABASE: main
-          SURREAL_URL: ${{ secrets.SURREAL_URL }}
-          SURREAL_NAMESPACE: ${{ secrets.SURREAL_NAMESPACE }}
-          SURREAL_USERNAME: ${{ secrets.SURREAL_USERNAME }}
-          SURREAL_PASSWORD: ${{ secrets.SURREAL_PASSWORD }}
-          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
-          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
-          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
-        run: python -m scripts.send_approved_outreach
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+        shell: bash
+        run: |
+          python -m scripts.send_approved_outreach --limit 3
