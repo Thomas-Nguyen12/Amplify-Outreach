@@ -2,6 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from functools import lru_cache
 
+DEFAULT_TEASER_URL = "https://amplify-social-replit.app"
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     app_name: str = "Social Trend Customer Search Agent"
@@ -37,7 +39,7 @@ class Settings(BaseSettings):
     subscription_currency: str = "GBP"
     subscription_interval: str = "month"
     subscription_price_gbp: str = "7"
-    teaser_url: str = ""
+    teaser_url: str = DEFAULT_TEASER_URL
     agent_api_key: str = ""
     minds_enabled: bool = False
     minds_builder_api_key: str = ""

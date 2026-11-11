@@ -11,7 +11,7 @@ import re
 from datetime import datetime, timezone
 from email.utils import parseaddr
 from urllib.request import Request, urlopen
-from .config import get_settings
+from .config import DEFAULT_TEASER_URL, get_settings
 from .drafts import _PRICE
 from .surreal_store import canonical_identity
 
@@ -150,6 +150,10 @@ def dispatch_one(store, identity, *, settings=None, provider=None):
         return {'status':'blocked_legacy_draft'}
     if 'AI assistance' not in body:
         return {'status':'blocked_missing_ai_disclosure'}
+    # Include the website for drafts saved before the link was configured.
+    teaser_url = getattr(s, 'teaser_url', DEFAULT_TEASER_URL) or DEFAULT_TEASER_URL
+    if teaser_url not in body:
+        body += f'\n\nYou can preview it here: {teaser_url}'
     # Insert traceable sender and an actionable opt-out by replying.
     body=body+f'\n\nSender: {s.outreach_sender_name}\nFor no further contact, reply STOP to {email_address(s.outreach_reply_to)}.\n'
     if _PRICE.search(body):
